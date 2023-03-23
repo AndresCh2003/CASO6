@@ -1,4 +1,4 @@
-package Modelo;
+package Controlador;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7,14 +7,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
 public class ConexionPG {
 
     Connection con;
 
-    String cadenaConexion = "jdbc:postgresql://localhost:5432/PV.Caso 6"; // conexion String o cadena de conexion
+    String cadenaConexion = "jdbc:postgresql://localhost:5432/caso6";
     String usuarioPG = "postgres";
-    String passPG = "bfml1123"; //contrasenia de postgres
+    String passPG = "1234";
 
     public ConexionPG() {
 
@@ -32,31 +33,29 @@ public class ConexionPG {
         }
     }
 
-    //Metodos genericos para realizar las transacciones en la base de datos
-    /*Metodo generico para cuando me devuelve datos*/
     public ResultSet consulta(String sql) {
 
         try {
-            Statement st = con.createStatement(); //recive como parametro la consulta
-            return st.executeQuery(sql);//Ejecuto la consulta y me devuelve un 'Resultset'
+            Statement st = con.createStatement();
+            return st.executeQuery(sql);
 
         } catch (SQLException ex) {
             Logger.getLogger(ConexionPG.class.getName()).log(Level.SEVERE, null, ex);
-            return null; //Si se da la excepcion me retorna un null
+            return null;
         }
     }
 
-    /*Metodo generico cuando no devuelve datos. FORMA 1*/
     public boolean accion(String sql) {
         boolean correcto;
+
         try {
             Statement st = con.createStatement();
             st.execute(sql);
             st.close();
             correcto = true;
         } catch (SQLException ex) {
-            Logger.getLogger(ConexionPG.class.getName()).log(Level.SEVERE, null, ex);
-            System.out.println(ex.getMessage());
+            Logger.getLogger(ConexionPG.class.getName()).log(Level.SEVERE, null, ex);//NO PONER EL LOGGER, CASO CONTRARIO SALE LA EXECEPCION EN LA CONSOLA
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage());
             correcto = false;
         }
 

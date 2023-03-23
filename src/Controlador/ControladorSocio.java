@@ -1,174 +1,192 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package Controlador;
 
 import Modelo.ModeloSocio;
-import Modelo.Socio;
+import Modelo.Socios;
 import Vista.VistaSocio;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.util.Date;
-import java.util.List;
-import javax.swing.JOptionPane;
-import javax.swing.RowFilter;
+import java.awt.Image;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
+import javax.xml.ws.Holder;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
-/**
- *
- * @author Usuario
- */
 public class ControladorSocio {
 
-    ModeloSocio modelo;
-    VistaSocio vista;
-//    VistaPrincipal p = new VistaPrincipal();
+    private ModeloSocio modelo;
+    private VistaSocio vista;
+    private JFileChooser jfc;
 
     public ControladorSocio(ModeloSocio modelo, VistaSocio vista) {
         this.modelo = modelo;
         this.vista = vista;
         vista.setVisible(true);
-//        vista.setSize(p.getEscritorioPrincipal().getWidth(), p.getEscritorioPrincipal().getHeight());
-//        cargarTablaDeNutricionista();
     }
 
     public void iniciarControl() {
-        vista.getBtnCrear().addActionListener(l -> abrirJDlgSocio());
-        vista.getBtnGuardar().addActionListener(l -> crearModificarSocio());
-       vista.getBtnActualizar().addActionListener(l -> cargarTablaDeSocios());
-        vista.getBtnModificar().addActionListener(l -> cargarDatosSocioEnTXT());
-        vista.getBtnEliminar().addActionListener(l -> eliminarSocio());
-        vista.getBtnCancelar().addActionListener(l -> cancelar());
-//        vista.getBtnImprimir().addActionListener(l-> imprimirPersona());
-//
-       buscarRegistros();
+        cargarTabla();
+
+        vista.getBtnCrear().addActionListener(l -> abrirJDlCrear());
+        vista.getBtnExaminar().addActionListener(l -> seleccionarFoto());
+        vista.getBtnGuardar().addActionListener(l -> crearEditar());
+        vista.getBtnActualizar().addActionListener(l -> cargarTabla());
+        vista.getBtnEliminar().addActionListener(l -> eliminar());
     }
 
-    public void abrirJDlgSocio() {
-        vista.getJdlgCrearSocio().setVisible(true);
-        vista.getJdlgCrearSocio().setSize(684, 475);
-        vista.getJdlgCrearSocio().setLocationRelativeTo(null);
-        vista.getJdlgCrearSocio().setName("Crear nuevo socio");
-        vista.getJdlgCrearSocio().setTitle("Crear nuevo socio");
-        cargarTablaDeSocios();
-        //QUITAR VISIBILIDAD DEL CODIGO DEL Socio
-        vista.getTxtCodigoSocio().setVisible(false);
-//        LimpiarCampos();
+    public void abrirJDlCrear() {
+
+        vista.getjDlgSocio().setVisible(true);
+        vista.getjDlgSocio().setSize(608, 520);
+        vista.getjDlgSocio().setLocationRelativeTo(null);
+        vista.getjDlgSocio().setName("Ingresar datos");
+        vista.getjDlgSocio().setTitle("Ingresar datos");
+
     }
 
-    public void cargarTablaDeSocios() {
-        DefaultTableModel tabla = (DefaultTableModel) vista.getjTblSocios().getModel();
-        tabla.setNumRows(0);
+    public void seleccionarFoto() {
 
-        List<Socio> socios = modelo.listaSocioTabla();
-        socios.stream().forEach(s -> {
-            Object[] datos = {String.valueOf(s.getSoc_cedula()), s.getSoc_nombres(), s.getSoc_telefono(), s.getSoc_placa(), s.getSoc_marca()};
-            tabla.addRow(datos);
+        vista.getLblFoto().setIcon(null);
+        jfc = new JFileChooser();
+        jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        int estado = jfc.showOpenDialog(null);
+
+        if (estado == JFileChooser.APPROVE_OPTION) {
+            try {
+                Image imagen = ImageIO.read(jfc.getSelectedFile()).getScaledInstance(vista.getLblFoto().getWidth(), vista.getLblFoto().getHeight(), Image.SCALE_DEFAULT);
+                vista.getLblFoto().setIcon(new ImageIcon(imagen));
+                vista.getLblFoto().updateUI();
+
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(vista, "Error: " + ex);
+            }
+        }
+    }
+
+    public void cargarTabla() {
+        vista.getTblSocio().setDefaultRenderer(Object.class, new ImagenTabla());//La manera de renderizar la tabla.
+        vista.getTblSocio().setRowHeight(100);
+
+        //Enlazar el modelo de tabla con mi controlador.
+        DefaultTableModel tblModel;
+        tblModel = (DefaultTableModel) vista.getTblSocio().getModel();
+        tblModel.setNumRows(0);//limpio filas de la tabla.
+
+        List<Socios> listap = modelo.listaSociosTabla();//Enlazo al Modelo y obtengo los datos
+        Holder<Integer> i = new Holder<>(0);//Contador para las filas. 'i' funciona dentro de una expresion lambda
+
+        listap.stream().forEach(s -> {
+
+            tblModel.addRow(new Object[9]);//Creo una fila vacia
+            vista.getTblSocio().setValueAt(s.getPer_cedula(), i.value, 0);
+            vista.getTblSocio().setValueAt(s.getNombre(), i.value, 1);
+            vista.getTblSocio().setValueAt(s.getDireccion(), i.value, 2);
+            vista.getTblSocio().setValueAt(s.getTelefono(), i.value, 3);
+            vista.getTblSocio().setValueAt(s.getDiscoTaxi(), i.value, 4);
+            vista.getTblSocio().setValueAt(s.getPlacaTaxi(), i.value, 5);
+            vista.getTblSocio().setValueAt(s.getMarcaTaxi(), i.value, 6);
+
+            Image foto = s.getImagen();
+            if (foto != null) {
+
+                Image nimg = foto.getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+                ImageIcon icono = new ImageIcon(nimg);
+                DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
+                renderer.setIcon(icono);
+                vista.getTblSocio().setValueAt(new JLabel(icono), i.value, 7);
+
+            } else {
+                vista.getTblSocio().setValueAt(null, i.value, 7);
+            }
+
+            i.value++;
         });
     }
 
+    private void crearEditar() {
+        if ("Ingresar datos".equals(vista.getjDlgSocio().getName())) {
 
-    public void crearModificarSocio() {
+            //INSERTAR
+            modelo.setPer_cedula(vista.getTxtCedula().getText());
+            modelo.setNombre(vista.getTxtNombre().getText());
+            modelo.setDireccion(vista.getTxtDireccion().getText());
+            modelo.setTelefono(vista.getTxtTelefono().getText());
+            modelo.setDiscoTaxi(vista.getTxtDisco().getText());
+            modelo.setPlacaTaxi(vista.getTxtPlaca().getText());
+            modelo.setMarcaTaxi(vista.getTxtMarca().getText());
 
-        if ("Crear nuevo socio".equals(vista.getJdlgCrearSocio().getName())) {
+            //Foto
+            try {
 
-            //Validar datos
-            ModeloSocio socio = new ModeloSocio();
-            if (socio.validarRepetidos(vista.getTxtCedula().getText()) == 0) {
+                FileInputStream foto = new FileInputStream(jfc.getSelectedFile());
+                int longitud = (int) jfc.getSelectedFile().length();
 
-                socio.setSoc_cedula(vista.getTxtCedula().getText());
-                socio.setSoc_nombres(vista.getTxtNombres().getText());
-                socio.setSoc_telefono(vista.getTxtTelefono().getText());
-                socio.setSoc_direccion(vista.getTxtDireccion().getText());
+                modelo.setFoto(foto);
+                modelo.setLongitud(longitud);
 
-
-                socio.setSoc_disco(vista.getTxtDisco().getText());
-               socio.setSoc_placa(vista.getTxtPlaca().getText());
-                socio.setSoc_marca(vista.getTxtMarca().getText());
-
-                    if (modelo.crearSocio()) {
-                        JOptionPane.showMessageDialog(null, "Se creo exitosamente");
-                        vista.getJdlgCrearSocio().dispose();
-                    } else {
-                        JOptionPane.showMessageDialog(null, "No se pudo registrar");
-                    }
-
-            } else {
-                JOptionPane.showMessageDialog(null, "El numero de cedula ya se encuentra registrado en la base de datos");
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(ControladorSocio.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } else {
-            ///Validar Datos
-            ModeloSocio socio = new ModeloSocio();
-                socio.setSoc_cedula(vista.getTxtCedula().getText());
-                socio.setSoc_nombres(vista.getTxtNombres().getText());
-                socio.setSoc_telefono(vista.getTxtTelefono().getText());
-                socio.setSoc_direccion(vista.getTxtDireccion().getText());
 
+            if (modelo.crearSocio()) {
 
-                socio.setSoc_disco(vista.getTxtDisco().getText());
-               socio.setSoc_placa(vista.getTxtPlaca().getText());
-                socio.setSoc_marca(vista.getTxtMarca().getText());
-
-            if (socio.modificarsocio()) {
-                System.out.println("Socio modificado");
-                modelo.setSoc_codigo(Integer.parseInt(vista.getTxtCodigoSocio().getText()));
-
-                if (modelo.modificarsocio()) {
-                    JOptionPane.showMessageDialog(null, "La información se modificó satisfactoriamente");
-                    vista.getJdlgCrearSocio().setVisible(false);
-                } else {
-                    JOptionPane.showMessageDialog(null, "No se pudo modificar la información");
-                }
+                JOptionPane.showMessageDialog(null, "Creado satisfactoriamente");
+                vista.getjDlgSocio().setVisible(false);
             } else {
-                System.out.println("Error modificando persona");
+                JOptionPane.showMessageDialog(null, "No se pudo crear");
             }
-        }
-        cargarTablaDeSocios();
-    }
-    
-    
-    
-    public void cargarDatosSocioEnTXT() {
-        int fila = vista.getjTblSocios().getSelectedRow();
 
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(null, "Aun no ha seleccionado una fila");
         } else {
 
-            //Abrir jDialog de campos de Docente
-            vista.getJdlgCrearSocio().setVisible(true);
-            vista.getJdlgCrearSocio().setName("Modificar socio");
-            vista.getJdlgCrearSocio().setSize(820, 562);
-            vista.getJdlgCrearSocio().setLocationRelativeTo(null);
-            vista.getJdlgCrearSocio().setTitle("Modificar socio");
-
-            //Quitar visibilidad
-            vista.getTxtCodigoSocio().setVisible(false);
-
-            List<Socio> listan = modelo.listaSocioTabla();
-
-            listan.stream().forEach(socios -> {
-
-                if (socios.getSoc_cedula().equals(vista.getjTblSocios().getValueAt(fila, 1).toString())) {
-                    vista.getTxtCedula().setText(socios.getSoc_cedula());
-                    vista.getTxtNombres().setText(socios.getSoc_nombres());
-                    vista.getTxtTelefono().setText(socios.getSoc_telefono());
-                    vista.getTxtDireccion().setText(socios.getSoc_direccion());
-                    vista.getTxtDisco().setText(socios.getSoc_disco());
-                    vista.getTxtPlaca().setText(socios.getSoc_placa());
-                    vista.getTxtMarca().setText(socios.getSoc_marca());
-
-                }
-            });
+//            //EDITAR
+//            modelo.setMed_codigo(Integer.parseInt(vista.getTxtCodigo().getText()));
+//            modelo.setMed_nomcom(vista.getTxtNomCom().getText());
+//            modelo.setMed_nomgen(vista.getTxtNomGen().getText());
+//
+//            java.sql.Date fechaEl = new java.sql.Date(vista.getFechaElaboracion().getDate().getTime());
+//            modelo.setMed_fechaela(fechaEl);
+//
+//            java.sql.Date fechaEx = new java.sql.Date(vista.getFechaExpiracion().getDate().getTime());
+//            modelo.setMed_fechaexp(fechaEx);
+//
+//            modelo.setMed_costo(Double.parseDouble(vista.getSpinnerCosto().getValue().toString()));
+//            modelo.setMed_pvp(Double.parseDouble(vista.getSpinnerPVP().getValue().toString()));
+//            //Foto
+//            try {
+//
+//                FileInputStream foto = new FileInputStream(jfc.getSelectedFile());
+//                int longitud = (int) jfc.getSelectedFile().length();
+//
+//                modelo.setFoto(foto);
+//                modelo.setLongitud(longitud);
+//
+//            } catch (FileNotFoundException ex) {
+//                Logger.getLogger(ControladorMedicamento.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//
+//            if (modelo.modificarMedicamento()) {
+//
+//                JOptionPane.showMessageDialog(null, "Medicamento modificado satisfactoriamente");
+//                vista.getjDlgMedicamento().setVisible(false);
+//            } else {
+//                JOptionPane.showMessageDialog(vista, "No se pudo modificar el medicamento");
+//            }
+//
         }
+
+        cargarTabla();
     }
-    
-    
-    public void eliminarSocio() {
-        int fila = vista.getjTblSocios().getSelectedRow();
+
+    public void eliminar() {
+
+        int fila = vista.getTblSocio().getSelectedRow();
 
         if (fila == -1) {
             JOptionPane.showMessageDialog(null, "Aun no ha seleccionado una fila");
@@ -177,62 +195,16 @@ public class ControladorSocio {
             int response = JOptionPane.showConfirmDialog(vista, "¿Seguro que desea eliminar esta información?", "Confirmar", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (response == JOptionPane.YES_OPTION) {
 
-                int codigoSocio;
-                codigoSocio = Integer.parseInt(vista.getjTblSocios().getValueAt(fila, 0).toString());
+                String cedula;
+                cedula = vista.getTblSocio().getValueAt(fila, 0).toString();
 
-                if (modelo.eliminarsocio(codigoSocio)) {
-                    JOptionPane.showMessageDialog(null, "El registro se elimino satisfactoriamente");
-                    cargarTablaDeSocios();//Actualizo la tabla con los datos
+                if (modelo.eliminar(cedula)) {
+                    JOptionPane.showMessageDialog(null, "Se elimino satisfactoriamente");
+                    cargarTabla();
                 } else {
-                    JOptionPane.showMessageDialog(null, "El registro no se pudo eliminar");
+                    JOptionPane.showMessageDialog(null, "No se pudo eliminar");
                 }
             }
         }
-    }
-    
-        public void buscarRegistros() {
-
-        KeyListener eventoTeclado = new KeyListener() {//Crear un objeto de tipo keyListener(Es una interface) por lo tanto se debe implementar sus metodos abstractos
-
-            @Override
-            public void keyTyped(KeyEvent e) {
-                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-
-                //CODIGO PARA FILTRAR LOS DATOS DIRECTAMENTE DE LA TABLA. NO ELIMINAR. SI FUNCIONA. ES MUY IMPORTANTE
-                TableRowSorter<DefaultTableModel> filtrar;
-
-                DefaultTableModel tabla = (DefaultTableModel) vista.getjTblSocios().getModel();
-
-                //vista.getTablaconduccion().setAutoCreateRowSorter(true);
-                filtrar = new TableRowSorter<>(tabla);
-                vista.getjTblSocios().setRowSorter(filtrar);
-
-                try {
-
-                    filtrar.setRowFilter(RowFilter.regexFilter(vista.getTxtBuscar().getText())); //Se pasa como parametro el campo de donde se va a obtener la informacion y el (3) es la columna con la cual va a buscar las coincidencias
-                } catch (Exception ex) {
-                    System.out.println("Error: " + ex);
-                }
-            }
-        };
-
-        vista.getTxtBuscar().addKeyListener(eventoTeclado); //"addKeyListener" es un metodo que se le tiene que pasar como argumento un objeto de tipo keyListener 
-    }
-    public void cancelar (){
-        vista.getJdlgCrearSocio().setVisible(false);
-    }
-
-    
-        public void bloquearcampos() {
-        vista.getTxtCedula().setEditable(false);
     }
 }
